@@ -1,0 +1,44 @@
+import streamlit as st
+
+# --- 計算邏輯 (與你原本的一樣) ---
+def calculate_bmi(w, h_m):
+    return round(w / (h_m ** 2), 2) if h_m > 0 else 0
+
+def calculate_bmr(w, h_cm, age, gender):
+    if gender == '男':
+        return round((10 * w) + (6.25 * h_cm) - (5 * age) + 5, 0)
+    return round((10 * w) + (6.25 * h_cm) - (5 * age) - 161, 0)
+
+# --- 網頁介面設計 ---
+st.set_page_config(page_title="BMI & TDEE 模擬器", page_icon="⚖️")
+st.title("⚖️ BMI & 體重變化模擬器")
+
+with st.sidebar:
+    st.header("個人參數輸入")
+    gender = st.radio("性別", ["男", "女"])
+    age = st.number_input("年齡", min_value=1, max_value=120, value=25)
+    height = st.number_input("身高 (cm)", min_value=50.0, value=170.0)
+    weight = st.number_input("體重 (kg)", min_value=10.0, value=65.0)
+    activity = st.select_slider("活動程度", options=["久坐", "輕量", "中度", "高度", "極重度"])
+    calories = st.number_input("預計每日攝取熱量 (kcal)", min_value=0, value=2000)
+factors = {"久坐": 1.2, "輕量": 1.375, "中度": 1.55, "高度": 1.725, "極重度": 1.9}
+factor = factors[activity]
+bmr = calculate_bmr(weight, height, age, gender)
+tdee = bmr * factor
+diff = calories - tdee
+weight_change = (diff * 30) / 7700
+col1, col2, col3 = st.columns(3)
+col1.metric("初始 BMI", calculate_bmi(weight, height/100))
+col2.metric("BMR (基礎代謝)", f"{bmr:.0f}")
+col3.metric("TDEE (總消耗)", f"{tdee:.0f}")
+
+st.divider()
+
+if diff < 0:
+    st.success(f"🔥 處於熱量赤字！每日差額：{diff:.0f} kcal")
+else:
+    st.warning(f"⚠️ 處於熱量盈餘！每日差額：+{diff:.0f} kcal")
+
+st.subheader("📅 30 天後預測")
+st.write(f"預計體重變化：**{weight_change:+.2f} kg**")
+st.write(f"預計最終體重：**{weight + weight_change:.2f} kg**")
